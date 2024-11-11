@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Приложение для обработки изображений</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #imageCanvas {
+            border: 1px solid black;
+            margin-top: 10px;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+    <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+</head>
+<body>
+
+    <h1>Приложение для обработки изображений</h1>
+    <input type="file" id="upload" accept="image/*">
+    <canvas id="imageCanvas"></canvas>
+
+    <div class="controls">
+        <button onclick="globalThresholding()">Глобальная пороговая обработка</button>
+        <button onclick="localThresholding()">Локальная пороговая обработка</button>
+        <button onclick="adaptiveThresholding()">Адаптивная пороговая обработка</button>
+        <button onclick="lowPassFilter()">Низкочастотный фильтр (сглаживание)</button>
+    </div>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        let originalImage = null;
+
+        upload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    originalImage = ctx.getImageData(0, 0, img.width, img.height);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Глобальная пороговая обработка
+        function globalThresholding() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+            cv.threshold(src, dst, 128, 255, cv.THRESH_BINARY); // Порог 128
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+
+        // Локальная пороговая обработка (например, используя метод Sauvola)
+        function localThresholding() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+            let blockSize = 15; // Размер блока
+            let C = 10; // Константа
+            cv.adaptiveThreshold(src, dst, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, blockSize, C);
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+
+        // Адаптивная пороговая обработка (алгоритм, как в лекции)
+        function adaptiveThresholding() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+            let blockSize = 11; // Размер блока
+            let C = 2; // Константа
+            cv.adaptiveThreshold(src, dst, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, C);
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+
+        // Низкочастотный фильтр (сглаживание)
+        function lowPassFilter() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            let ksize = new cv.Size(9, 9); // Размер ядра сглаживания
+            cv.GaussianBlur(src, dst, ksize, 0); // Применение гауссового размытия
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+    </script>
+</body>
+</html>
